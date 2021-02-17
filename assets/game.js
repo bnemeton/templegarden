@@ -5,6 +5,9 @@ var container = display.getContainer();
 var gameDiv = document.body.querySelector("#game");
 var invDiv = document.body.querySelector("#inv")
 gameDiv.appendChild(container);
+var gift;
+var giftName;
+
 
 
 //map creation
@@ -79,9 +82,9 @@ const colors = {
 }
 
 //create entities (player, NPCs) and items
-function createEntity(type, x, y, char, action) {
+function createEntity(type, x, y, char, want, action) {
     map.set(x, y, 2);
-    return {type, x, y, char, action};
+    return {type, x, y, char, want, action};
 }
  pickUp = function(item, x, y) {
     var index = items.indexOf(item)
@@ -92,7 +95,7 @@ function createEntity(type, x, y, char, action) {
      inventory.push(item);
      invDiv.innerHTML = "";
      for (i = 0; i < inventory.length; i++) {
-        invDiv.textContent += inventory[i].name + " - "
+        invDiv.textContent += "[" + i + "]" + inventory[i].name + " - "
     }
  };
 
@@ -102,8 +105,8 @@ function createEntity(type, x, y, char, action) {
  }
 
 let player = createEntity("player", 5, 4, "@", "");
-let wizard = createEntity ("wizard", 9, 9, "W", "''Ahoy, I'm a wizard. I'm going to help build a temple here.''");
-let apothecary = createEntity("apothecary", 13, 13, "A", "''Hey, I am an apothecary. I'm hoping to grow herbs in the garden that will be here.''");
+let wizard = createEntity ("wizard", 9, 9, "W", "mushroom", "''Ahoy, I'm a wizard. I'm going to help build a temple here.''");
+let apothecary = createEntity("apothecary", 13, 13, "A", "flower", "''Hey, I am an apothecary. I'm hoping to grow herbs in the garden that will be here.''");
 
 let flower = createItem("flower", Math.floor((Math.random()*30)+1), Math.floor((Math.random()*30)+1), "🌼", "You pick the flower.")
 let mushroom = createItem("mushroom", Math.floor((Math.random()*30)+1), Math.floor((Math.random()*30)+1), "🍄", "You pick the mushroom.")
@@ -117,19 +120,37 @@ world.draw();
 
 //is the player about to interact with something? is indicated by this var
 var interact = false;
+var giving = false;
+
+ checkEntity = function(x, y) {
+     for (i = 0; i < entities.length; i++) {
+        if (entities[i].x === x && entities[i].y === y) {
+            return entities[i];
+        }
+     }
+ }
+checkGift = function(gift, entity) {
+    giftName = gift.name
+    console.log(("attempting to give away " + giftName))
+    if (giftName === entity.want) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 //move/interact function
 var move = function(entity, dX, dY) {
     var newX = entity.x + dX;
     var newY = entity.y + dY;
-    if (!interact) {
+    if (!interact && !giving) {
         if (world.isPassable(newX, newY)) {
             map.set(entity.x, entity.y, 0)
             entity.x = newX;
             entity.y = newY;
         } else {
             return;
-    }} else if (map.get(newX, newY) === 2) {
+    }} else if (interact && map.get(newX, newY) === 2) {
         for (i=0; i < entities.length; i++) {
             if (entities[i].x === newX && entities[i].y === newY) {
                 print(entities[i].action);
@@ -137,7 +158,7 @@ var move = function(entity, dX, dY) {
             }}
             interact = false;
             return;
-    } else if (map.get(newX, newY) === 3) {
+    } else if (interact && map.get(newX, newY) === 3) {
         for (i=0; i < items.length; i++) {
             if (items[i].x === newX && items[i].y === newY) {
                 print(items[i].pickup);
@@ -147,7 +168,16 @@ var move = function(entity, dX, dY) {
             interact = false;
             world.draw();
             return;
+    } else if (giving && map.get(newX, newY) === 2) {
+        console.log("attempting to give gift")
+        if (checkGift(gift, checkEntity(newX, newY))) {
+            print("Oh, thank you! That's perfect.")
+            //increment SQL value for entity & remove item from inventory
+        } else {
+            print("I don't want that, but thanks.")
+        }
     } else {
+        giving = false;
         interact = false;
         return;
     }
@@ -165,8 +195,18 @@ document.addEventListener("keydown", function(event) {
     } else if (event.code === "ArrowLeft") {
         move(player, -1, 0);
     } else if (event.code === "Space") {
+        giving = false;
         interact = true;
-    } else {
+    } else if (event.code === "KeyX") {
+        console.log("attempting to choose gift");
+        gift = window.prompt("Please select an item to give by entering a number, then press OK, then press a direction to give it.");
+        gift = inventory[gift]
+        interact = false;
+        giving = true;
+    
+        return;
+    }
+    else {
         return;
     }
     world.draw();
