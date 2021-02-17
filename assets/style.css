@@ -1,7 +1,8 @@
 #messages {
     width: 500px;
     background-color: lavender;
-    color: seagreen;
+    color: green;
+    font-size: 150%;
 }
 
 #game {
