@@ -1,0 +1,13 @@
+#messages {
+    width: 500px;
+    background-color: lavender;
+    color: seagreen;
+}
+
+#game {
+    float:left;
+}
+
+aside {
+    float: left;
+}
